@@ -139,7 +139,7 @@ class GameWithDnD(GameWithObjects):
                 if self.drag:
                     self.drag.pos = event.pos
                     self.drag.speed = event.rel
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.drag:
             self.drag.active = True
             self.drag = None
         GameWithObjects.Events(self, event)
