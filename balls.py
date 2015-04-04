@@ -77,7 +77,7 @@ class Ball:
             y = surface.get_height() - self.rect.height/2
             dy = -dy
         self.pos = x,y
-        self.speed = dx,dy
+        self.speed = dx, dy + 0.7
         self.rect.center = intn(*self.pos)
 
 class Universe:
