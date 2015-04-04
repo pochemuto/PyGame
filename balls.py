@@ -3,6 +3,9 @@
 
 import pygame
 import random
+import math
+import itertools
+import numpy as np
 
 SIZE = 640, 480
 
@@ -53,6 +56,7 @@ class Ball:
         self.active = True
         self.gravity = 0.7
         self.elasticity = 0.95
+        self.radius = self.rect.height / 2
 
     def draw(self, surface):
         surface.blit(self.surface, self.rect)
@@ -98,6 +102,7 @@ class RotatingBall(Ball):
         self.speed_angular = speed_angular
         self.original_surface = self.surface
         self.angle = 0
+        self.radius *= scale
 
     def logic(self, surface):
         if self.active:
@@ -153,10 +158,52 @@ class GameWithObjects(GameMode):
         for obj in self.objects:
             obj.logic(surface)
 
+        active_objects = filter(lambda obj: obj.active, self.objects)
+        for pair in itertools.combinations(active_objects, 2):
+            collision = self.collision_detect(*pair)
+            if collision:
+                pair[0].pos = collision['position_a']
+                pair[1].pos = collision['position_b']
+                pair[0].active = pair[1].active = False
+
+
     def Draw(self, surface):
         GameMode.Draw(self, surface)
         for obj in self.objects:
             obj.draw(surface)
+
+    @staticmethod
+    def collision_detect(ball_a, ball_b):
+        a = np.array(ball_a.pos)
+        b = np.array(ball_b.pos)
+        va = np.array(ball_a.speed)
+        vb = np.array(ball_b.speed)
+        v = va - vb
+        c = b - a
+        v_norm = np.linalg.norm(v)
+        if np.linalg.norm(c) > (v_norm + ball_a.radius + ball_b.radius):
+            # за текущий кадр шары не долетят друг до друга
+            return None
+        if np.dot(c, v) <= 0:
+            # мячи удаляются друг от друга
+            return None
+        n = v / v_norm
+        # расстояние от ball_a до точки на векторе движения, наиболее близкой к ball_b
+        d = np.dot(n, c)
+        f_square = np.linalg.norm(c)**2 - d**2
+        smallest_dist_square = (ball_a.radius + ball_b.radius) ** 2
+        if f_square > smallest_dist_square:
+            # шары пролетят мимо
+            return None
+        # расстояние по вектору v от ball_a до точки соударения
+        distance = d - math.sqrt(smallest_dist_square - f_square)
+        #
+        delta = distance / v_norm
+        return {
+            'position_a': tuple(a + va * delta),
+            'position_b': tuple(b + vb * delta)
+        }
+
 
 class GameWithDnD(GameWithObjects):
 
@@ -182,10 +229,10 @@ class GameWithDnD(GameWithObjects):
         GameWithObjects.Events(self, event)
 
 Init(SIZE)
-Game = Universe(50)
+Game = Universe(150)
 
 Run = GameWithDnD()
-for i in xrange(5):
+for i in xrange(2):
     x, y = random.randrange(screenrect.w), random.randrange(screenrect.h)
     dx, dy = 1+random.random()*5, 1+random.random()*5
     angular = 5 * (random.random() - 0.5)
