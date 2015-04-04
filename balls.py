@@ -42,7 +42,6 @@ class GameMode:
 
 class Ball:
     '''Simple ball class'''
-
     def __init__(self, filename, pos = (0.0, 0.0), speed = (0.0, 0.0)):
         '''Create a ball from image'''
         self.fname = filename
@@ -52,6 +51,8 @@ class Ball:
         self.pos = pos
         self.newpos = pos
         self.active = True
+        self.gravity = 0.7
+        self.elasticity = 0.95
 
     def draw(self, surface):
         surface.blit(self.surface, self.rect)
@@ -66,18 +67,18 @@ class Ball:
         dx, dy = self.speed
         if x < self.rect.width/2:
             x = self.rect.width/2
-            dx = -dx
+            dx = -dx * self.elasticity
         elif x > surface.get_width() - self.rect.width/2:
             x = surface.get_width() - self.rect.width/2
-            dx = -dx
+            dx = -dx * self.elasticity
         if y < self.rect.height/2:
             y = self.rect.height/2
-            dy = -dy
+            dy = -dy * self.elasticity
         elif y > surface.get_height() - self.rect.height/2:
             y = surface.get_height() - self.rect.height/2
-            dy = -dy
+            dy = -dy * self.elasticity
         self.pos = x,y
-        self.speed = dx, dy + 0.7
+        self.speed = dx, dy + self.gravity
         self.rect.center = intn(*self.pos)
 
 
@@ -99,9 +100,10 @@ class RotatingBall(Ball):
         self.angle = 0
 
     def logic(self, surface):
-        self.angle = RotatingBall.limit(self.angle + self.speed_angular, 360)
-        self.surface = pygame.transform.rotozoom(self.original_surface, self.angle, self.scale)
-        self.rect = self.surface.get_rect()
+        if self.active:
+            self.angle = RotatingBall.limit(self.angle + self.speed_angular, 360)
+            self.surface = pygame.transform.rotozoom(self.original_surface, self.angle, self.scale)
+            self.rect = self.surface.get_rect()
         Ball.logic(self, surface)
 
     @staticmethod
