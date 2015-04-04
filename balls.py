@@ -83,7 +83,7 @@ class Ball:
 
 class RotatingBall(Ball):
     """ Rotating ball """
-    def __init__(self, filename, pos = (0.0, 0.0), speed = (0.0, 0.0), speed_angular = 0.0):
+    def __init__(self, filename, pos = (0.0, 0.0), speed = (0.0, 0.0), speed_angular = 0.0, scale = 1.0):
         """
         Rotating ball
         :param filename: path to file with sprite
@@ -93,13 +93,14 @@ class RotatingBall(Ball):
         :return:
         """
         Ball.__init__(self, filename, pos, speed)
+        self.scale = scale
         self.speed_angular = speed_angular
         self.original_surface = self.surface
         self.angle = 0
 
     def logic(self, surface):
         self.angle = RotatingBall.limit(self.angle + self.speed_angular, 360)
-        self.surface = pygame.transform.rotozoom(self.original_surface, self.angle, 1)
+        self.surface = pygame.transform.rotozoom(self.original_surface, self.angle, self.scale)
         self.rect = self.surface.get_rect()
         Ball.logic(self, surface)
 
@@ -185,8 +186,9 @@ Run = GameWithDnD()
 for i in xrange(5):
     x, y = random.randrange(screenrect.w), random.randrange(screenrect.h)
     dx, dy = 1+random.random()*5, 1+random.random()*5
-    sa = 5 * (random.random() - 0.5)
-    Run.objects.append(RotatingBall("ball.gif",(x,y),(dx,dy), speed_angular=sa))
+    angular = 5 * (random.random() - 0.5)
+    scale = random.random() + 0.5
+    Run.objects.append(RotatingBall("ball.gif",(x,y),(dx,dy), speed_angular=angular, scale=scale))
 
 Game.Start()
 Run.Init()
