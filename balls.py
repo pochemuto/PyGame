@@ -164,10 +164,8 @@ class GameWithObjects(GameMode):
             if collision:
                 for n, ball in enumerate(pair):
                     ball.pos = collision['position'][n]
-                    ball.speed = collision['speed'][n]
-                    # ball.active = False
-
-
+                    speed = collision['speed'][n]
+                    ball.speed = speed[0] * ball.elasticity, speed[1] * ball.elasticity
 
     def Draw(self, surface):
         GameMode.Draw(self, surface)
