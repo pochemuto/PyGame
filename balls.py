@@ -162,9 +162,11 @@ class GameWithObjects(GameMode):
         for pair in itertools.combinations(active_objects, 2):
             collision = self.collision_detect(*pair)
             if collision:
-                pair[0].pos = collision['position_a']
-                pair[1].pos = collision['position_b']
-                pair[0].active = pair[1].active = False
+                for n, ball in enumerate(pair):
+                    ball.pos = collision['position'][n]
+                    ball.speed = collision['speed'][n]
+                    # ball.active = False
+
 
 
     def Draw(self, surface):
@@ -174,14 +176,15 @@ class GameWithObjects(GameMode):
 
     @staticmethod
     def collision_detect(ball_a, ball_b):
+        norm = np.linalg.norm
         a = np.array(ball_a.pos)
         b = np.array(ball_b.pos)
         va = np.array(ball_a.speed)
         vb = np.array(ball_b.speed)
         v = va - vb
         c = b - a
-        v_norm = np.linalg.norm(v)
-        if np.linalg.norm(c) > (v_norm + ball_a.radius + ball_b.radius):
+        v_norm = norm(v)
+        if norm(c) > (v_norm + ball_a.radius + ball_b.radius):
             # за текущий кадр шары не долетят друг до друга
             return None
         if np.dot(c, v) <= 0:
@@ -190,18 +193,27 @@ class GameWithObjects(GameMode):
         n = v / v_norm
         # расстояние от ball_a до точки на векторе движения, наиболее близкой к ball_b
         d = np.dot(n, c)
-        f_square = np.linalg.norm(c)**2 - d**2
+        f_square = norm(c)**2 - d**2
         smallest_dist_square = (ball_a.radius + ball_b.radius) ** 2
         if f_square > smallest_dist_square:
             # шары пролетят мимо
             return None
         # расстояние по вектору v от ball_a до точки соударения
         distance = d - math.sqrt(smallest_dist_square - f_square)
-        #
+        # доля кадра, через которое произойдет соударение
         delta = distance / v_norm
+        # положения мячей во время соударения
+        collision_a = a + va * delta
+        collision_b = b + vb * delta
+        collision_distance = collision_b - collision_a
+        collision_c = collision_distance / norm(collision_distance)
+        # вектора скоростей после соударения
+        speed_a = - collision_c * norm(va)
+        speed_b = collision_c * norm(vb)
         return {
-            'position_a': tuple(a + va * delta),
-            'position_b': tuple(b + vb * delta)
+            'delta': delta,
+            'position': (tuple(collision_a), tuple(collision_b)),
+            'speed': (tuple(speed_a), tuple(speed_b))
         }
 
 
@@ -229,10 +241,10 @@ class GameWithDnD(GameWithObjects):
         GameWithObjects.Events(self, event)
 
 Init(SIZE)
-Game = Universe(150)
+Game = Universe(50)
 
 Run = GameWithDnD()
-for i in xrange(2):
+for i in xrange(5):
     x, y = random.randrange(screenrect.w), random.randrange(screenrect.h)
     dx, dy = 1+random.random()*5, 1+random.random()*5
     angular = 5 * (random.random() - 0.5)
